@@ -398,7 +398,7 @@ public final class BackPex extends JavaPlugin implements CommandExecutor {
         boolean isLocked = currentLockState == 1;
 
         // Muda o material para dar um feedback visual claro
-        Material material = isLocked ? Material.IRON_BARS : Material.OAK_FENCE_GATE;
+        Material material = isLocked ? Material.BARRIER : Material.LIME_CONCRETE;
         ItemStack button = new ItemStack(material);
         ItemMeta meta = button.getItemMeta();
 
