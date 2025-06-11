@@ -35,6 +35,7 @@ public final class BackPex extends JavaPlugin implements CommandExecutor {
     public static NamespacedKey PAGE_NEXT_BUTTON_KEY;
     public static NamespacedKey PAGE_PREV_BUTTON_KEY;
     public static NamespacedKey PAGE_INDICATOR_KEY;
+    public static NamespacedKey BACKPEX_LOCK_TOGGLE_KEY;
 
     private final Map<String, UUID> currentlyViewingBackPex = new HashMap<>();
     private final Map<UUID, String> playerViewingWhat = new HashMap<>();
@@ -92,6 +93,7 @@ public final class BackPex extends JavaPlugin implements CommandExecutor {
         PAGE_NEXT_BUTTON_KEY = new NamespacedKey(this, "page_next_button");
         PAGE_PREV_BUTTON_KEY = new NamespacedKey(this, "page_prev_button");
         PAGE_INDICATOR_KEY = new NamespacedKey(this, "page_indicator");
+        BACKPEX_LOCK_TOGGLE_KEY = new NamespacedKey(this, "backpex_lock_toggle_key");
 
         getServer().getPluginManager().registerEvents(new CauldronCraftListener(this), this);
         getCommand("backpex").setExecutor(this);
@@ -391,4 +393,25 @@ public final class BackPex extends JavaPlugin implements CommandExecutor {
         player.sendMessage(newLockState == 1 ? ChatColor.GREEN + "BackPex (bloco) trancado!" : ChatColor.YELLOW + "BackPex (bloco) destrancado!");
         player.playSound(player.getLocation(), Sound.BLOCK_LEVER_CLICK, 1.0f, newLockState == 1 ? 0.8f : 1.2f);
     }
+
+    public ItemStack createLockToggleButton(byte currentLockState) {
+        boolean isLocked = currentLockState == 1;
+
+        // Muda o material para dar um feedback visual claro
+        Material material = isLocked ? Material.IRON_BARS : Material.OAK_FENCE_GATE;
+        ItemStack button = new ItemStack(material);
+        ItemMeta meta = button.getItemMeta();
+
+        if (meta != null) {
+            meta.setDisplayName(isLocked ? ChatColor.RED + "Mochila Trancada" : ChatColor.GREEN + "Mochila Destrancada");
+            List<String> lore = new ArrayList<>();
+            lore.add(ChatColor.GRAY + "Clique para " + (isLocked ? "destrancar." : "trancar."));
+            meta.setLore(lore);
+            // Adiciona a chave para que possamos identificá-lo no evento de clique
+            meta.getPersistentDataContainer().set(BACKPEX_LOCK_TOGGLE_KEY, PersistentDataType.BYTE, (byte) 1);
+            button.setItemMeta(meta);
+        }
+        return button;
+    }
+
 }

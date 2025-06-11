@@ -243,9 +243,11 @@ public class CauldronCraftListener implements Listener {
     }
 
     private void openBackPexAsBackpack(Player player, ItemStack backPexItem, ItemMeta backPexMeta) {
+        // CORRIGIDO: A lógica de trava foi movida para este método.
+        String ownerUuid = backPexMeta.getPersistentDataContainer().get(BackPex.BACKPEX_OWNER_KEY, PersistentDataType.STRING);
         byte lockState = backPexMeta.getPersistentDataContainer().getOrDefault(BackPex.BACKPEX_LOCKED_KEY, PersistentDataType.BYTE, (byte) 0);
+
         if (lockState == 1) {
-            String ownerUuid = backPexMeta.getPersistentDataContainer().get(BackPex.BACKPEX_OWNER_KEY, PersistentDataType.STRING);
             if (ownerUuid != null && !player.getUniqueId().toString().equals(ownerUuid)) {
                 player.sendMessage(ChatColor.RED + "Este BackPex está trancado.");
                 player.playSound(player.getLocation(), Sound.BLOCK_CHEST_LOCKED, 1.0f, 1.0f);
@@ -261,7 +263,8 @@ public class CauldronCraftListener implements Listener {
 
         BackPexInventoryHolder holder = new BackPexInventoryHolder(backPexUuid, backPexItem.clone());
         plugin.setCurrentPage(player, 0);
-        openBackPexGUI(player, backPexUuid, level, serializedContents, holder);
+        // CORRIGIDO: Passa o 'lockState' como parâmetro.
+        openBackPexGUI(player, backPexUuid, level, serializedContents, lockState, holder);
     }
 
     private int getInventorySizeForLevel(int level) {
@@ -458,7 +461,7 @@ public class CauldronCraftListener implements Listener {
 
             BackPexInventoryHolder holder = new BackPexInventoryHolder(backPexUuid, clickedBlock.getLocation());
             plugin.setCurrentPage(player, 0);
-            openBackPexGUI(player, backPexUuid, level, serializedContents, holder);
+            openBackPexGUI(player, backPexUuid, level, serializedContents, lockState, holder);
         }
     }
 
@@ -486,6 +489,12 @@ public class CauldronCraftListener implements Listener {
                 ItemMeta clickedMeta = (clickedItem != null) ? clickedItem.getItemMeta() : null;
 
                 if (clickedMeta != null) {
+                    if (clickedMeta.getPersistentDataContainer().has(BackPex.BACKPEX_LOCK_TOGGLE_KEY, PersistentDataType.BYTE)) {
+                        event.setCancelled(true);
+                        toggleLockFromGui(player, currentBackPexHolder); // Chama o novo método
+                        return;
+                    }
+
                     if (clickedMeta.getPersistentDataContainer().has(BackPex.PAGE_NEXT_BUTTON_KEY, PersistentDataType.BYTE)) {
                         event.setCancelled(true);
                         changeBackPexPage(player, currentBackPexHolder, 1);
@@ -812,7 +821,7 @@ public class CauldronCraftListener implements Listener {
         plugin.removeCurrentPage(event.getPlayer());
     }
 
-    private void openBackPexGUI(Player player, String backPexUuid, int level, String serializedContents, BackPexInventoryHolder holder) {
+    private void openBackPexGUI(Player player, String backPexUuid, int level, String serializedContents, byte lockState, BackPexInventoryHolder holder) {
         UUID jogadorAtual = player.getUniqueId();
         if (plugin.isBeingViewed(backPexUuid) && !jogadorAtual.equals(plugin.getViewerOf(backPexUuid))) {
             player.sendMessage(ChatColor.RED + "Este BackPex já está em uso por outro jogador!");
@@ -842,14 +851,6 @@ public class CauldronCraftListener implements Listener {
             int contentIndex = startIndex + i;
             if (contentIndex < allItems.length) {
                 backPexInventory.setItem(i, allItems[contentIndex]);
-            } else {
-                ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-                ItemMeta meta = filler.getItemMeta();
-                if (meta != null) {
-                    meta.setDisplayName(ChatColor.RED + "Slot Bloqueado");
-                    filler.setItemMeta(meta);
-                }
-                backPexInventory.setItem(i, filler);
             }
         }
 
@@ -863,19 +864,24 @@ public class CauldronCraftListener implements Listener {
             backPexInventory.setItem(i, controlFiller);
         }
 
+        backPexInventory.setItem(45, plugin.createLockToggleButton(lockState));
+
+        // Botão Página Anterior à esquerda do livro (Slot 48)
         if (currentPage > 0) {
-            backPexInventory.setItem(45, plugin.createPrevPageButton());
+            backPexInventory.setItem(48, plugin.createPrevPageButton());
         }
+
         backPexInventory.setItem(49, plugin.createPageIndicatorItem(currentPage, totalPages));
+
         if (currentPage < totalPages - 1) {
-            backPexInventory.setItem(53, plugin.createNextPageButton());
-        } else {
-            backPexInventory.setItem(53, plugin.createLevelIndicatorItem(level));
+            backPexInventory.setItem(50, plugin.createNextPageButton());
         }
+        backPexInventory.setItem(53, plugin.createLevelIndicatorItem(level));
 
         player.openInventory(backPexInventory);
     }
 
+    // Em CauldronCraftListener.java
     private void changeBackPexPage(Player player, BackPexInventoryHolder holder, int direction) {
         player.playSound(player.getLocation(), org.bukkit.Sound.ITEM_BOOK_PAGE_TURN, 1.0f, 1.0f);
 
@@ -887,6 +893,7 @@ public class CauldronCraftListener implements Listener {
         String backPexUuid = holder.getBackPexUuid();
         int level;
         String serializedContents;
+        byte lockState; // CORRIGIDO: Adicionada variável para o estado de trava
 
         if (holder.isItemSource()) {
             ItemStack updatedItem = findBackPexItemInPlayerInventory(player, backPexUuid);
@@ -898,6 +905,7 @@ public class CauldronCraftListener implements Listener {
             ItemMeta itemMeta = updatedItem.getItemMeta();
             level = itemMeta.getPersistentDataContainer().getOrDefault(BackPex.BACKPEX_LEVEL_KEY, PersistentDataType.INTEGER, 0);
             serializedContents = itemMeta.getPersistentDataContainer().get(BackPex.BACKPEX_CONTENT_KEY, PersistentDataType.STRING);
+            lockState = itemMeta.getPersistentDataContainer().getOrDefault(BackPex.BACKPEX_LOCKED_KEY, PersistentDataType.BYTE, (byte) 0); // CORRIGIDO
         } else if (holder.isBlockSource()) {
             Block block = holder.getBlockLocation().getBlock();
             if (!(block.getState() instanceof Chest)) {
@@ -908,12 +916,14 @@ public class CauldronCraftListener implements Listener {
             Chest chestState = (Chest) block.getState();
             level = chestState.getPersistentDataContainer().getOrDefault(BackPex.BACKPEX_LEVEL_KEY, PersistentDataType.INTEGER, 0);
             serializedContents = chestState.getPersistentDataContainer().get(BackPex.BACKPEX_CONTENT_KEY, PersistentDataType.STRING);
+            lockState = chestState.getPersistentDataContainer().getOrDefault(BackPex.BACKPEX_LOCKED_KEY, PersistentDataType.BYTE, (byte) 0); // CORRIGIDO
         } else {
             return;
         }
 
         Bukkit.getScheduler().runTask(plugin, () -> {
-            openBackPexGUI(player, backPexUuid, level, serializedContents, holder);
+            // CORRIGIDO: Passa o 'lockState' para a chamada do método
+            openBackPexGUI(player, backPexUuid, level, serializedContents, lockState, holder);
         });
     }
 
@@ -1017,5 +1027,44 @@ public class CauldronCraftListener implements Listener {
                 }
             }
         }
+    }
+
+    private void toggleLockFromGui(Player player, BackPexInventoryHolder holder) {
+        String backPexUuid = holder.getBackPexUuid();
+        byte newLockState;
+
+        if (holder.isItemSource()) {
+            ItemStack backPexItem = findBackPexItemInPlayerInventory(player, backPexUuid);
+            if (backPexItem == null) {
+                player.sendMessage(ChatColor.RED + "Erro: Não foi possível encontrar o BackPex no seu inventário.");
+                return;
+            }
+            ItemMeta meta = backPexItem.getItemMeta();
+            if (meta == null) return;
+
+            byte currentLockState = meta.getPersistentDataContainer().getOrDefault(BackPex.BACKPEX_LOCKED_KEY, PersistentDataType.BYTE, (byte) 0);
+            newLockState = (currentLockState == 0) ? (byte) 1 : (byte) 0;
+            meta.getPersistentDataContainer().set(BackPex.BACKPEX_LOCKED_KEY, PersistentDataType.BYTE, newLockState);
+            backPexItem.setItemMeta(meta);
+
+        } else if (holder.isBlockSource()) {
+            Block block = holder.getBlockLocation().getBlock();
+            if (!(block.getState() instanceof Chest)) {
+                player.sendMessage(ChatColor.RED + "Erro: O bloco BackPex foi removido ou alterado.");
+                return;
+            }
+            Chest chestState = (Chest) block.getState();
+            byte currentLockState = chestState.getPersistentDataContainer().getOrDefault(BackPex.BACKPEX_LOCKED_KEY, PersistentDataType.BYTE, (byte) 0);
+            newLockState = (currentLockState == 0) ? (byte) 1 : (byte) 0;
+            chestState.getPersistentDataContainer().set(BackPex.BACKPEX_LOCKED_KEY, PersistentDataType.BYTE, newLockState);
+            chestState.update();
+
+        } else {
+            return; // Fonte desconhecida
+        }
+
+        // Atualiza o botão na GUI em tempo real
+        player.getOpenInventory().getTopInventory().setItem(45, plugin.createLockToggleButton(newLockState));
+        player.playSound(player.getLocation(), Sound.BLOCK_LEVER_CLICK, 1.0f, newLockState == 1 ? 0.8f : 1.2f);
     }
 }
