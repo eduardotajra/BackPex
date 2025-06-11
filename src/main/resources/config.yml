@@ -1,0 +1,47 @@
+# ----------------------------------- #
+# Configuração do Plugin BackPex      #
+# ----------------------------------- #
+
+# Cada seção 'level-X' define o custo para evoluir DO nível X PARA o nível X+1.
+# Por exemplo, 'level-0' é o custo para ir do nível 0 para o 1.
+#
+# Materiais devem ser os nomes exatos do Enum Material do Spigot.
+# Lista de materiais: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
+
+upgrades:
+  level-0:
+    required-material: 'OAK_PLANKS'
+    required-amount: 64
+  level-1:
+    required-material: 'OAK_LOG'
+    required-amount: 128
+  level-2:
+    required-material: 'COBBLESTONE'
+    required-amount: 256
+  level-3:
+    required-material: 'COPPER_BLOCK'
+    required-amount: 128
+  level-4:
+    required-material: 'IRON_BLOCK'
+    required-amount: 64
+  level-5:
+    required-material: 'LAPIS_BLOCK'
+    required-amount: 96
+  level-6:
+    required-material: 'REDSTONE_BLOCK'
+    required-amount: 96
+  level-7:
+    required-material: 'GOLD_BLOCK'
+    required-amount: 48
+  level-8:
+    required-material: 'AMETHYST_BLOCK'
+    required-amount: 128
+  level-9:
+    required-material: 'DIAMOND_BLOCK'
+    required-amount: 30
+  level-10:
+    required-material: 'EMERALD_BLOCK'
+    required-amount: 10
+  level-11:
+    required-material: 'NETHERITE_BLOCK'
+    required-amount: 2

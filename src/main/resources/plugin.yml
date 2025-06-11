@@ -1,0 +1,22 @@
+name: BackPex
+version: 1.0
+main: com.Tajra.backPex.BackPex
+api-version: '1.20'
+author: Tajra
+description: Um plugin de mochila customizável com níveis.
+commands:
+  backpex:
+    description: Comando principal do plugin BackPex.
+    usage: /<command>
+    aliases: [bp]
+permissions:
+  backpex.reload:
+    description: Permite recarregar a configuração do BackPex.
+    default: op
+  backpex.lock:
+    description: Permite trancar um BackPex que lhe pertence.
+    default: true
+  backpex.trust:
+    description: Permite gerenciar a lista de confiança de um BackPex que lhe pertence.
+    default: true
+
