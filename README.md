@@ -117,7 +117,7 @@ Se você deseja modificar o código ou compilá-lo a partir do fonte, siga os pa
 
 ```bash
 # Clone o repositório:
-git clone https://github.com/seu-usuario/seu-repositorio.git
+git clone https://github.com/eduardotajra/BackPex.git
 
 # Navegue até o diretório do projeto:
 cd BackPex
@@ -126,8 +126,8 @@ cd BackPex
 mvn clean package
 ```
 
-O arquivo `BackPex-1.0.jar` estará localizado na pasta `target`.  
-Plugin desenvolvido por Eduardo Tajra.
+O arquivo `BackPex-1.0.jar` estará localizado na pasta `target`.
+Utilize o `BackPex-1.0-SNAPSHOT-shaded.jar`.
 
 ---
 
